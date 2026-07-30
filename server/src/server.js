@@ -8,6 +8,11 @@ const { connectDB } = require('./config/db');
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'development-only-secret-change-before-deploy';
+  console.warn('JWT_SECRET is not set. Using a development-only fallback secret.');
+}
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -41,4 +46,3 @@ module.exports = {
   io,
   startServer,
 };
-

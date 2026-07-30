@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const healthRoutes = require('./routes/health.routes');
+const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/health', healthRoutes);
+app.use('/api/auth', authRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -28,5 +30,13 @@ app.use((req, res) => {
   });
 });
 
-module.exports = app;
+app.use((error, req, res, next) => {
+  console.error(error);
 
+  res.status(500).json({
+    status: 'error',
+    message: 'Something went wrong on the server',
+  });
+});
+
+module.exports = app;
