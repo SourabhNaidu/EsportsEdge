@@ -114,12 +114,11 @@ function App() {
   const user = profileQuery.data?.user
   const isAdmin = user?.role === 'admin'
   const apiOnline = !healthQuery.isError && !healthQuery.isLoading
-  const matches = matchesQuery.data?.items?.length
-    ? matchesQuery.data.items
-    : featuredMatches
+  const matches = matchesQuery.data?.items ?? featuredMatches
   const selectedMatch =
     matches.find((match) => match._id === selectedMatchId || match.id === selectedMatchId) ||
-    matches[0]
+    matches[0] ||
+    featuredMatches[0]
   const heroPanel = view === 'admin'
     ? <AdminPanel token={token} isAdmin={isAdmin} />
     : view === 'login'
@@ -499,7 +498,10 @@ function PredictionCard({ apiOnline, match, token, onLogin }) {
 
         <button
           type="submit"
-          disabled={mutation.isPending || Boolean(prediction) || isLocked || !isRealMatch}
+          disabled={
+            Boolean(token) &&
+            (mutation.isPending || Boolean(prediction) || isLocked || !isRealMatch)
+          }
           className="inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Target className="h-4 w-4" />
@@ -561,6 +563,7 @@ function MatchBoard({ matches, search, status, source, isLoading, onSearch, onSt
           className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70"
         />
         <select
+          aria-label="Match status filter"
           value={status}
           onChange={(event) => onStatus(event.target.value)}
           className="border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70"
@@ -575,6 +578,10 @@ function MatchBoard({ matches, search, status, source, isLoading, onSearch, onSt
       <div className="mt-5 grid gap-3">
         {isLoading ? (
           <p className="text-sm text-stone-400">Loading matches...</p>
+        ) : matches.length === 0 ? (
+          <p className="border border-white/10 bg-black/25 p-4 text-sm text-stone-400">
+            No matches found for the current search or filter.
+          </p>
         ) : matches.map((match) => (
           <article key={match._id || match.id} className="border border-white/10 bg-black/25 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -765,7 +772,7 @@ function AuthPanel({ mode, onSuccess }) {
             ? 'Please wait'
             : isRegister
               ? 'Create Account'
-              : 'Login'}
+              : 'Log In Securely'}
         </button>
       </form>
     </section>

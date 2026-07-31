@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const { loginSchema, registerSchema } = require('../schemas/auth.schema');
 const { signAuthToken } = require('../utils/tokens');
@@ -7,6 +8,22 @@ const SALT_ROUNDS = 12;
 
 function formatZodError(error) {
   return error.issues.map((issue) => issue.message);
+}
+
+function isDatabaseReady() {
+  return mongoose.connection.readyState === 1;
+}
+
+function requireDatabase(res) {
+  if (isDatabaseReady()) {
+    return true;
+  }
+
+  res.status(503).json({
+    status: 'error',
+    message: 'Database is not connected. Start MongoDB to use accounts.',
+  });
+  return false;
 }
 
 async function register(req, res) {
@@ -18,6 +35,10 @@ async function register(req, res) {
       message: 'Invalid registration details',
       errors: formatZodError(parsed.error),
     });
+  }
+
+  if (!requireDatabase(res)) {
+    return undefined;
   }
 
   const { username, email, password, adminInviteCode } = parsed.data;
@@ -63,6 +84,10 @@ async function login(req, res) {
       message: 'Invalid login details',
       errors: formatZodError(parsed.error),
     });
+  }
+
+  if (!requireDatabase(res)) {
+    return undefined;
   }
 
   const { email, password } = parsed.data;

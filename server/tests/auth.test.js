@@ -22,4 +22,25 @@ describe('auth validation', () => {
     expect(response.status).toBe(401);
     expect(response.body.message).toBe('Authentication token is required');
   });
+
+  it('fails fast for login when the database is offline', async () => {
+    const response = await request(app).post('/api/auth/login').send({
+      email: 'test@example.com',
+      password: 'password123',
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.body.message).toBe('Database is not connected. Start MongoDB to use accounts.');
+  });
+
+  it('fails fast for registration when the database is offline', async () => {
+    const response = await request(app).post('/api/auth/register').send({
+      username: 'tester',
+      email: 'tester@example.com',
+      password: 'password123',
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.body.message).toBe('Database is not connected. Start MongoDB to use accounts.');
+  });
 });
