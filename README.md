@@ -58,6 +58,16 @@ Backend health check: `http://localhost:5000/api/health`
 
 To create an admin user locally, enter the same `ADMIN_INVITE_CODE` while registering.
 
+6. Add realistic Valorant seed data:
+
+```bash
+npm run seed
+```
+
+The seed adds real Valorant-style teams, notable player handles, tournaments,
+matches, agents, maps, and demo leaderboard users. Demo user password:
+`Valorant123!`.
+
 ## Auth Endpoints
 
 - `POST /api/auth/register`: create a user account
@@ -115,4 +125,5 @@ When MongoDB is offline, the match list returns demo fixtures so the frontend st
 - `npm run server:dev`: run backend only
 - `npm run client:dev`: run frontend only
 - `npm run client:build`: build frontend
+- `npm run seed`: add realistic Valorant demo data to MongoDB
 - `npm test`: run backend tests

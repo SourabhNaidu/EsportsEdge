@@ -67,12 +67,10 @@ const matchSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-matchSchema.pre('validate', function validateTeams(next) {
+matchSchema.pre('validate', function validateTeams() {
   if (this.teamA && this.teamB && this.teamA.toString() === this.teamB.toString()) {
-    return next(new Error('A match needs two different teams'));
+    throw new Error('A match needs two different teams');
   }
-
-  return next();
 });
 
 module.exports = mongoose.model('Match', matchSchema);

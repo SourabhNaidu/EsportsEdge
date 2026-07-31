@@ -46,9 +46,6 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
-
 userSchema.methods.toSafeObject = function toSafeObject() {
   return {
     id: this._id.toString(),
@@ -61,4 +58,3 @@ userSchema.methods.toSafeObject = function toSafeObject() {
 };
 
 module.exports = mongoose.model('User', userSchema);
-

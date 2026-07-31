@@ -364,6 +364,8 @@ function PredictionCard({ apiOnline, match, token, onLogin }) {
   const queryClient = useQueryClient()
   const teamAId = match.teamA?._id || match.teamAId
   const teamBId = match.teamB?._id || match.teamBId
+  const teamACrowd = getTeamACrowd(match)
+  const insight = getMatchInsight(match)
   const isRealMatch = /^[0-9a-fA-F]{24}$/.test(match._id || '')
   const [form, setForm] = useState({
     winner: teamAId,
@@ -450,18 +452,18 @@ function PredictionCard({ apiOnline, match, token, onLogin }) {
       <div className="mt-4">
         <div className="mb-2 flex justify-between text-sm text-stone-400">
           <span>{match.teamA?.shortName || match.tagA} win crowd</span>
-          <span>{match.predictionPercentages?.teamA || match.winA}%</span>
+          <span>{teamACrowd}%</span>
         </div>
         <div className="h-3 overflow-hidden rounded-full bg-white/10">
           <div
             className="h-full rounded-full bg-[#ff4655] shadow-[0_0_18px_rgba(255,70,85,0.5)]"
-            style={{ width: `${match.predictionPercentages?.teamA || match.winA}%` }}
+            style={{ width: `${teamACrowd}%` }}
           />
         </div>
       </div>
 
       <p className="mt-4 rounded border border-[#45d3dc]/20 bg-[#45d3dc]/10 p-3 text-sm leading-6 text-stone-200">
-        {match.insight}
+        {insight}
       </p>
 
       <form className="mt-4 grid gap-3" onSubmit={submitPrediction}>
@@ -630,7 +632,7 @@ function MatchBoard({ matches, search, status, source, isLoading, onSearch, onSt
                 {match.status || match.alert}
               </span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-stone-400">{match.insight}</p>
+            <p className="mt-3 text-sm leading-6 text-stone-400">{getMatchInsight(match)}</p>
             <button
               type="button"
               onClick={() => onSelect(match)}
@@ -657,6 +659,44 @@ function formatMatchTime(startsAt, fallback) {
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(startsAt))
+}
+
+function getFormScore(team) {
+  const form = team?.recentForm || []
+
+  if (!form.length) {
+    return 50
+  }
+
+  return Math.round((form.filter((result) => result === 'W').length / form.length) * 100)
+}
+
+function getTeamACrowd(match) {
+  if (match.predictionPercentages?.teamA || match.winA) {
+    return match.predictionPercentages?.teamA || match.winA
+  }
+
+  const teamAForm = getFormScore(match.teamA)
+  const teamBForm = getFormScore(match.teamB)
+  const share = Math.round(50 + (teamAForm - teamBForm) / 3)
+
+  return Math.min(68, Math.max(32, share))
+}
+
+function getMatchInsight(match) {
+  if (match.insight) {
+    return match.insight
+  }
+
+  const teamAName = match.teamA?.name || match.teamA || 'Team A'
+  const teamBName = match.teamB?.name || match.teamB || 'Team B'
+  const teamAForm = getFormScore(match.teamA)
+  const teamBForm = getFormScore(match.teamB)
+  const leader = teamAForm >= teamBForm ? teamAName : teamBName
+  const gap = Math.abs(teamAForm - teamBForm)
+  const pressure = gap <= 10 ? 'tight form gap' : 'clearer momentum edge'
+
+  return `${leader} carry the stronger recent form into this ${match.bestOf || 3}-map series, with a ${pressure} against ${teamAForm >= teamBForm ? teamBName : teamAName}.`
 }
 
 function Leaderboard({ data, isLoading }) {
