@@ -16,6 +16,7 @@ import {
   Target,
   Trophy,
   UserPlus,
+  X,
   Zap,
 } from 'lucide-react'
 import { getProfile, loginUser, registerUser } from './api/auth'
@@ -164,17 +165,17 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen bg-[#07080b] text-stone-100">
+    <main className="min-h-screen overflow-hidden bg-[#07080b] text-stone-100">
       <section className="relative overflow-hidden border-b border-white/10">
         <img
           src="/images/valorant-analytics-hero.png"
           alt="Tactical esports analytics arena"
-          className="absolute inset-0 h-full w-full object-cover opacity-48"
+          className="absolute inset-0 h-full w-full object-cover opacity-62"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#07080b_0%,rgba(7,8,11,0.94)_34%,rgba(7,8,11,0.68)_68%,#07080b_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_18%,rgba(255,70,85,0.22),transparent_30%),radial-gradient(circle_at_78%_44%,rgba(69,211,220,0.12),transparent_28%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#07080b_0%,rgba(7,8,11,0.96)_31%,rgba(7,8,11,0.68)_66%,#07080b_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,8,11,0)_0%,#07080b_96%)]" />
 
-        <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-5 sm:px-8 lg:px-10">
+        <div className="relative mx-auto flex min-h-[92vh] w-full max-w-7xl flex-col px-5 py-5 sm:px-8 lg:px-10">
           <Nav
             view={view}
             token={token}
@@ -185,28 +186,30 @@ function App() {
             logout={logout}
           />
 
-          <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[0.96fr_1.04fr]">
-            <section>
-              <div className="mb-6 inline-flex items-center gap-2 border border-[#ff4655]/40 bg-[#ff4655]/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#ff9aa3]">
+          <div className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-2">
+            <section className="min-w-0">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#ff4655]/40 bg-[#ff4655]/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#ff9aa3] shadow-[0_0_30px_rgba(255,70,85,0.18)]">
                 <Sparkles className="h-4 w-4" />
                 Valorant prediction intelligence
               </div>
 
-              <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.94] text-white sm:text-6xl lg:text-7xl">
-                Read the match before the odds move.
+              <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.9] text-white sm:text-6xl xl:text-7xl">
+                EsportsEdge
               </h1>
 
-              <p className="mt-6 max-w-2xl text-base leading-8 text-stone-300 sm:text-lg">
-                EsportsEdge turns upcoming Valorant fixtures into clean win
-                picks, form signals, map reads, and leaderboard competition for
-                fans who want more than a coin flip.
+              <p className="mt-5 max-w-2xl text-xl font-semibold leading-8 text-white sm:text-2xl">
+                Predict Valorant matches with live crowd reads, form signals,
+                and a leaderboard that updates when results land.
+              </p>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-stone-300">
+                Built for fans who want the match story before they lock a pick.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => setView(token ? 'profile' : 'register')}
-                  className="inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76]"
+                  className="inline-flex items-center justify-center gap-2 rounded bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_16px_45px_rgba(255,70,85,0.24)] transition hover:-translate-y-0.5 hover:bg-[#ff6b76]"
                 >
                   <Target className="h-4 w-4" />
                   Make A Pick
@@ -214,7 +217,7 @@ function App() {
                 <button
                   type="button"
                   onClick={() => setView(isAdmin ? 'admin' : token ? 'profile' : 'login')}
-                  className="inline-flex items-center justify-center gap-2 border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-white/[0.08]"
+                  className="inline-flex items-center justify-center gap-2 rounded border border-white/15 bg-white/[0.07] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/[0.12]"
                 >
                   {isAdmin ? <Crown className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
                   {isAdmin ? 'Admin Desk' : token ? 'Player Card' : 'Sign In'}
@@ -227,18 +230,20 @@ function App() {
                 <Metric label="Realtime" value={socketConnected ? 'On' : 'Demo'} />
               </div>
               {liveNotice && (
-                <p className="mt-4 inline-flex border border-[#45d3dc]/30 bg-[#45d3dc]/10 px-3 py-2 text-sm text-[#a7f3f7]">
+                <p className="mt-4 inline-flex rounded border border-[#45d3dc]/30 bg-[#45d3dc]/10 px-3 py-2 text-sm text-[#a7f3f7]">
                   {liveNotice}
                 </p>
               )}
             </section>
 
-            {heroPanel}
+            <div className="min-w-0">
+              {heroPanel}
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-12 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-10">
+      <section className="relative mx-auto grid w-full max-w-7xl gap-6 px-5 py-12 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-10">
         <MatchBoard
           matches={matches}
           search={matchSearch}
@@ -269,9 +274,9 @@ function App() {
 
 function Nav({ view, token, isAdmin, apiOnline, socketConnected, setView, logout }) {
   return (
-    <nav className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+    <nav className="flex flex-wrap items-center justify-between gap-4 rounded border border-white/10 bg-[#080a0f]/70 px-3 py-3 shadow-2xl shadow-black/30 backdrop-blur-xl">
       <button type="button" onClick={() => setView('home')} className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded border border-[#ff4655]/50 bg-[#ff4655]/15">
+        <div className="grid h-10 w-10 place-items-center rounded border border-[#ff4655]/50 bg-[#ff4655]/15 shadow-[0_0_24px_rgba(255,70,85,0.22)]">
           <Swords className="h-5 w-5 text-[#ff4655]" />
         </div>
         <div className="text-left">
@@ -300,7 +305,7 @@ function Nav({ view, token, isAdmin, apiOnline, socketConnected, setView, logout
             <button
               type="button"
               onClick={logout}
-              className="inline-flex items-center gap-2 border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-stone-200 transition hover:bg-white/[0.08]"
+            className="inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-stone-200 transition hover:bg-white/[0.12]"
             >
               <LogOut className="h-4 w-4" />
               Logout
@@ -323,8 +328,8 @@ function Nav({ view, token, isAdmin, apiOnline, socketConnected, setView, logout
 
 function StatusDot({ apiOnline, socketConnected }) {
   return (
-    <div className="hidden items-center gap-2 border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-stone-300 sm:flex">
-      <span className={`h-2 w-2 rounded-full ${apiOnline ? 'bg-emerald-400' : 'bg-[#45d3dc]'}`} />
+    <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-stone-300 sm:flex">
+      <span className={`h-2 w-2 rounded-full ${apiOnline ? 'bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.85)]' : 'bg-[#45d3dc]'}`} />
       {apiOnline ? (socketConnected ? 'Live API' : 'API ready') : 'Demo preview'}
     </div>
   )
@@ -335,10 +340,10 @@ function NavButton({ active, children, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`border px-3 py-2 text-sm font-semibold transition ${
+      className={`rounded px-3 py-2 text-sm font-semibold transition ${
         active
-          ? 'border-[#ff4655]/70 bg-[#ff4655]/15 text-white'
-          : 'border-white/10 bg-white/[0.04] text-stone-300 hover:bg-white/[0.08]'
+          ? 'bg-[#ff4655] text-white shadow-[0_12px_28px_rgba(255,70,85,0.2)]'
+          : 'border border-white/10 bg-white/[0.04] text-stone-300 hover:bg-white/[0.1] hover:text-white'
       }`}
     >
       {children}
@@ -348,7 +353,7 @@ function NavButton({ active, children, onClick }) {
 
 function Metric({ label, value }) {
   return (
-    <div className="border border-white/10 bg-black/25 p-4">
+    <div className="rounded border border-white/10 bg-black/35 p-4 shadow-xl shadow-black/20 backdrop-blur">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{label}</p>
       <p className="mt-2 text-2xl font-black text-white">{value}</p>
     </div>
@@ -413,26 +418,28 @@ function PredictionCard({ apiOnline, match, token, onLogin }) {
   }
 
   return (
-    <section className="border border-white/10 bg-[#0d1016]/88 p-5 shadow-2xl shadow-black/40 backdrop-blur">
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+    <section className="rounded border border-white/10 bg-[#0d1016]/90 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-5">
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#45d3dc]">
             Featured Pick
           </p>
-          <h2 className="mt-1 text-2xl font-bold text-white">
+          <h2 className="mt-1 text-xl font-bold leading-tight text-white sm:text-2xl">
             {match.tournament?.name || match.tournament}
           </h2>
         </div>
-        <RadioTower className={`h-7 w-7 ${apiOnline ? 'text-emerald-300' : 'text-[#45d3dc]'}`} />
+        <div className="grid h-11 w-11 place-items-center rounded bg-white/[0.06]">
+          <RadioTower className={`h-6 w-6 ${apiOnline ? 'text-emerald-300' : 'text-[#45d3dc]'}`} />
+        </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+      <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
         <TeamMark
           tag={match.teamA?.shortName || match.tagA}
           name={match.teamA?.name || match.teamA}
           align="left"
         />
-        <span className="text-xs font-black uppercase tracking-[0.18em] text-stone-500">vs</span>
+        <span className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-black/35 text-xs font-black uppercase tracking-[0.12em] text-stone-400">vs</span>
         <TeamMark
           tag={match.teamB?.shortName || match.tagB}
           name={match.teamB?.name || match.teamB}
@@ -440,24 +447,24 @@ function PredictionCard({ apiOnline, match, token, onLogin }) {
         />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-4">
         <div className="mb-2 flex justify-between text-sm text-stone-400">
           <span>{match.teamA?.shortName || match.tagA} win crowd</span>
           <span>{match.predictionPercentages?.teamA || match.winA}%</span>
         </div>
-        <div className="h-3 overflow-hidden bg-white/10">
+        <div className="h-3 overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full bg-[#ff4655]"
+            className="h-full rounded-full bg-[#ff4655] shadow-[0_0_18px_rgba(255,70,85,0.5)]"
             style={{ width: `${match.predictionPercentages?.teamA || match.winA}%` }}
           />
         </div>
       </div>
 
-      <p className="mt-5 border border-[#45d3dc]/20 bg-[#45d3dc]/10 p-4 text-sm leading-6 text-stone-200">
+      <p className="mt-4 rounded border border-[#45d3dc]/20 bg-[#45d3dc]/10 p-3 text-sm leading-6 text-stone-200">
         {match.insight}
       </p>
 
-      <form className="mt-5 grid gap-3" onSubmit={submitPrediction}>
+      <form className="mt-4 grid gap-3" onSubmit={submitPrediction}>
         <div className="grid gap-3 sm:grid-cols-2">
           <SelectField label="Winner" name="winner" value={form.winner} onChange={updateField}>
             <option value={teamAId}>{match.teamA?.name || match.teamA}</option>
@@ -492,12 +499,12 @@ function PredictionCard({ apiOnline, match, token, onLogin }) {
         </div>
 
         {prediction && (
-          <p className="border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
+          <p className="rounded border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
             Prediction saved: {prediction.winner?.name} {prediction.scoreline}
           </p>
         )}
         {mutation.isError && (
-          <p className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
+          <p className="rounded border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
             {mutation.error.message}
           </p>
         )}
@@ -513,7 +520,7 @@ function PredictionCard({ apiOnline, match, token, onLogin }) {
             Boolean(token) &&
             (mutation.isPending || Boolean(prediction) || isLocked || !isRealMatch)
           }
-          className="inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded bg-[#ff4655] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_16px_40px_rgba(255,70,85,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ff6b76] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
         >
           <Target className="h-4 w-4" />
           {!token ? 'Login To Predict' : isLocked ? 'Predictions Locked' : prediction ? 'Pick Saved' : 'Lock Pick'}
@@ -531,7 +538,7 @@ function SelectField({ label, name, value, onChange, children }) {
         name={name}
         value={value}
         onChange={onChange}
-        className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70"
+        className="w-full rounded border border-white/10 bg-black/35 px-4 py-2.5 text-base text-white outline-none transition focus:border-[#45d3dc]/70 focus:bg-black/50"
       >
         {children}
       </select>
@@ -542,17 +549,17 @@ function SelectField({ label, name, value, onChange, children }) {
 function TeamMark({ tag, name, align }) {
   return (
     <div className={align === 'right' ? 'text-right' : 'text-left'}>
-      <div className="inline-grid h-14 w-14 place-items-center border border-white/10 bg-white/[0.06] text-lg font-black text-white">
+      <div className="inline-grid h-14 w-14 place-items-center rounded border border-white/10 bg-white/[0.08] text-lg font-black text-white shadow-xl shadow-black/25">
         {tag}
       </div>
-      <p className="mt-3 text-sm font-semibold text-white">{name}</p>
+      <p className="mt-2 text-sm font-semibold text-white">{name}</p>
     </div>
   )
 }
 
 function MatchBoard({ matches, search, status, source, isLoading, onSearch, onStatus, onSelect }) {
   return (
-    <section className="border border-white/10 bg-[#0d1016] p-5">
+    <section className="rounded border border-white/10 bg-[#0d1016] p-5 shadow-2xl shadow-black/30">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#45d3dc]">
@@ -563,21 +570,35 @@ function MatchBoard({ matches, search, status, source, isLoading, onSearch, onSt
             Source: {source}
           </p>
         </div>
-        <Trophy className="h-7 w-7 text-[#ff4655]" />
+        <div className="grid h-11 w-11 place-items-center rounded bg-[#ff4655]/12">
+          <Trophy className="h-6 w-6 text-[#ff4655]" />
+        </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
-        <input
-          value={search}
-          onChange={(event) => onSearch(event.target.value)}
-          placeholder="Search teams or tournaments"
-          className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70"
-        />
+        <div className="relative">
+          <input
+            value={search}
+            onChange={(event) => onSearch(event.target.value)}
+            placeholder="Search teams or tournaments"
+            className="w-full rounded border border-white/10 bg-black/35 px-4 py-3 pr-11 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70 focus:bg-black/50"
+          />
+          {search && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => onSearch('')}
+              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded text-stone-400 transition hover:bg-white/[0.08] hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
         <select
           aria-label="Match status filter"
           value={status}
           onChange={(event) => onStatus(event.target.value)}
-          className="border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70"
+          className="rounded border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70 focus:bg-black/50"
         >
           <option value="">All</option>
           <option value="upcoming">Upcoming</option>
@@ -590,11 +611,12 @@ function MatchBoard({ matches, search, status, source, isLoading, onSearch, onSt
         {isLoading ? (
           <p className="text-sm text-stone-400">Loading matches...</p>
         ) : matches.length === 0 ? (
-          <p className="border border-white/10 bg-black/25 p-4 text-sm text-stone-400">
+          <p className="rounded border border-white/10 bg-black/25 p-4 text-sm text-stone-400">
             No matches found for the current search or filter.
           </p>
         ) : matches.map((match) => (
-          <article key={match._id || match.id} className="border border-white/10 bg-black/25 p-4">
+          <article key={match._id || match.id} className="group relative overflow-hidden rounded border border-white/10 bg-black/28 p-4 transition hover:-translate-y-0.5 hover:border-[#45d3dc]/35 hover:bg-white/[0.04]">
+            <div className="absolute inset-y-0 left-0 w-1 bg-[#ff4655] opacity-70" />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
@@ -604,7 +626,7 @@ function MatchBoard({ matches, search, status, source, isLoading, onSearch, onSt
                   {match.teamA?.name || match.teamA} vs {match.teamB?.name || match.teamB}
                 </h3>
               </div>
-              <span className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#ffb0b7]">
+              <span className="rounded-full border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#ffb0b7]">
                 {match.status || match.alert}
               </span>
             </div>
@@ -612,7 +634,7 @@ function MatchBoard({ matches, search, status, source, isLoading, onSearch, onSt
             <button
               type="button"
               onClick={() => onSelect(match)}
-              className="mt-4 inline-flex items-center gap-2 border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-stone-200 transition hover:bg-white/[0.08]"
+              className="mt-4 inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.05] px-3 py-2 text-sm font-semibold text-stone-200 transition hover:border-[#45d3dc]/40 hover:bg-[#45d3dc]/10 hover:text-white"
             >
               <Target className="h-4 w-4" />
               View Pick
@@ -648,7 +670,7 @@ function Leaderboard({ data, isLoading }) {
       ]
 
   return (
-    <section className="border border-white/10 bg-[#0d1016] p-5">
+    <section className="rounded border border-white/10 bg-[#0d1016] p-5 shadow-2xl shadow-black/30">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#45d3dc]">
@@ -656,15 +678,23 @@ function Leaderboard({ data, isLoading }) {
           </p>
           <h2 className="mt-1 text-2xl font-bold text-white">Top Predictors</h2>
         </div>
-        <Crown className="h-7 w-7 text-[#ff4655]" />
+        <div className="grid h-11 w-11 place-items-center rounded bg-[#ff4655]/12">
+          <Crown className="h-6 w-6 text-[#ff4655]" />
+        </div>
       </div>
 
       <div className="mt-5 grid gap-2">
         {isLoading ? (
           <p className="text-sm text-stone-400">Loading leaderboard...</p>
         ) : rows.map((row, index) => (
-          <div key={row.username} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border border-white/10 bg-black/25 p-3">
-            <span className="grid h-9 w-9 place-items-center bg-white/[0.06] text-sm font-black text-white">
+          <div key={row.username} className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded border p-3 ${
+            index === 0
+              ? 'border-[#ff4655]/35 bg-[#ff4655]/10'
+              : 'border-white/10 bg-black/25'
+          }`}>
+            <span className={`grid h-9 w-9 place-items-center rounded text-sm font-black text-white ${
+              index === 0 ? 'bg-[#ff4655]' : 'bg-white/[0.07]'
+            }`}>
               {index + 1}
             </span>
             <div>
@@ -704,10 +734,12 @@ function buildInsights(analytics) {
 
 function InsightCard({ label, value, detail, icon: Icon }) {
   return (
-    <article className="border border-white/10 bg-[#0d1016] p-5">
+    <article className="rounded border border-white/10 bg-[#0d1016] p-5 shadow-2xl shadow-black/25 transition hover:-translate-y-0.5 hover:border-[#ff4655]/30">
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{label}</p>
-        <Icon className="h-6 w-6 text-[#ff4655]" />
+        <div className="grid h-10 w-10 place-items-center rounded bg-white/[0.06]">
+          <Icon className="h-5 w-5 text-[#ff4655]" />
+        </div>
       </div>
       <p className="mt-4 text-4xl font-black text-white">{value}</p>
       <p className="mt-3 text-sm leading-6 text-stone-400">{detail}</p>
@@ -748,7 +780,7 @@ function AuthPanel({ mode, onSuccess }) {
   }
 
   return (
-    <section className="border border-white/10 bg-[#0d1016]/88 p-5 shadow-2xl shadow-black/40 backdrop-blur">
+    <section className="rounded border border-white/10 bg-[#0d1016]/90 p-5 shadow-2xl shadow-black/50 backdrop-blur-xl">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#45d3dc]">
@@ -759,9 +791,13 @@ function AuthPanel({ mode, onSuccess }) {
           </h2>
         </div>
         {isRegister ? (
-          <UserPlus className="h-7 w-7 text-[#ff4655]" />
+          <div className="grid h-11 w-11 place-items-center rounded bg-[#ff4655]/12">
+            <UserPlus className="h-6 w-6 text-[#ff4655]" />
+          </div>
         ) : (
-          <LogIn className="h-7 w-7 text-[#ff4655]" />
+          <div className="grid h-11 w-11 place-items-center rounded bg-[#ff4655]/12">
+            <LogIn className="h-6 w-6 text-[#ff4655]" />
+          </div>
         )}
       </div>
 
@@ -802,7 +838,7 @@ function AuthPanel({ mode, onSuccess }) {
         )}
 
         {mutation.isError && (
-          <p className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
+          <p className="rounded border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
             {mutation.error.message}
           </p>
         )}
@@ -810,7 +846,7 @@ function AuthPanel({ mode, onSuccess }) {
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="mt-2 inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76] disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-2 inline-flex items-center justify-center gap-2 rounded bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_16px_40px_rgba(255,70,85,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ff6b76] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
         >
           <ShieldCheck className="h-4 w-4" />
           {mutation.isPending
@@ -834,7 +870,7 @@ function Field({ label, name, value, onChange, type = 'text', placeholder }) {
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70"
+        className="w-full rounded border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70 focus:bg-black/50"
       />
     </label>
   )
@@ -843,14 +879,14 @@ function Field({ label, name, value, onChange, type = 'text', placeholder }) {
 function ProfilePanel({ token, user, isLoading, error, onLogin }) {
   if (!token) {
     return (
-      <section className="border border-white/10 bg-[#0d1016]/88 p-5 shadow-2xl shadow-black/40 backdrop-blur">
+      <section className="rounded border border-white/10 bg-[#0d1016]/90 p-5 shadow-2xl shadow-black/50 backdrop-blur-xl">
         <Lock className="h-8 w-8 text-[#ff4655]" />
         <h2 className="mt-4 text-2xl font-bold text-white">Player card locked</h2>
         <p className="mt-3 text-stone-300">Login first to view your prediction profile.</p>
         <button
           type="button"
           onClick={onLogin}
-          className="mt-5 inline-flex items-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white"
+          className="mt-5 inline-flex items-center gap-2 rounded bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white"
         >
           <LogIn className="h-4 w-4" />
           Login
@@ -860,7 +896,7 @@ function ProfilePanel({ token, user, isLoading, error, onLogin }) {
   }
 
   return (
-    <section className="border border-white/10 bg-[#0d1016]/88 p-5 shadow-2xl shadow-black/40 backdrop-blur">
+    <section className="rounded border border-white/10 bg-[#0d1016]/90 p-5 shadow-2xl shadow-black/50 backdrop-blur-xl">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#45d3dc]">
@@ -870,11 +906,13 @@ function ProfilePanel({ token, user, isLoading, error, onLogin }) {
             {isLoading ? 'Loading profile' : user?.username || 'Session'}
           </h2>
         </div>
-        <ShieldCheck className="h-7 w-7 text-emerald-300" />
+        <div className="grid h-11 w-11 place-items-center rounded bg-emerald-400/10">
+          <ShieldCheck className="h-6 w-6 text-emerald-300" />
+        </div>
       </div>
 
       {error ? (
-        <p className="mt-5 border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
+        <p className="mt-5 rounded border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
           {error.message}
         </p>
       ) : (
@@ -897,7 +935,7 @@ function StatusTile({ icon, label, value, tone }) {
   }[tone]
 
   return (
-    <div className={`border p-4 ${toneClass}`}>
+    <div className={`rounded border p-4 ${toneClass}`}>
       <div className="flex items-center gap-2 text-stone-400">
         {icon}
         <span className="text-xs font-semibold uppercase tracking-[0.18em]">{label}</span>

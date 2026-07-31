@@ -204,7 +204,7 @@ function AdminPanel({ token, isAdmin }) {
 
   if (!isAdmin) {
     return (
-      <section className="border border-white/10 bg-[#0d1016]/88 p-5 shadow-2xl shadow-black/40 backdrop-blur">
+      <section className="rounded border border-white/10 bg-[#0d1016]/90 p-5 shadow-2xl shadow-black/50 backdrop-blur-xl">
         <Lock className="h-8 w-8 text-[#ff4655]" />
         <h2 className="mt-4 text-2xl font-bold text-white">Admin Only</h2>
         <p className="mt-3 text-stone-300">
@@ -215,7 +215,7 @@ function AdminPanel({ token, isAdmin }) {
   }
 
   return (
-    <section className="border border-white/10 bg-[#0d1016]/88 p-5 shadow-2xl shadow-black/40 backdrop-blur">
+    <section className="rounded border border-white/10 bg-[#0d1016]/90 p-5 shadow-2xl shadow-black/50 backdrop-blur-xl">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#45d3dc]">
@@ -226,7 +226,7 @@ function AdminPanel({ token, isAdmin }) {
         <button
           type="button"
           onClick={() => listQuery.refetch()}
-          className="inline-flex items-center gap-2 border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-stone-200"
+          className="inline-flex items-center gap-2 rounded border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-stone-200 transition hover:bg-white/[0.12]"
         >
           <RefreshCw className="h-4 w-4" />
           Refresh
@@ -239,10 +239,10 @@ function AdminPanel({ token, isAdmin }) {
             key={name}
             type="button"
             onClick={() => selectResource(name)}
-            className={`border px-3 py-2 text-sm font-semibold capitalize transition ${
+            className={`rounded px-3 py-2 text-sm font-semibold capitalize transition ${
               resource === name
-                ? 'border-[#ff4655]/70 bg-[#ff4655]/15 text-white'
-                : 'border-white/10 bg-white/[0.04] text-stone-300 hover:bg-white/[0.08]'
+                ? 'bg-[#ff4655] text-white shadow-[0_12px_28px_rgba(255,70,85,0.2)]'
+                : 'border border-white/10 bg-white/[0.04] text-stone-300 hover:bg-white/[0.1] hover:text-white'
             }`}
           >
             {name}
@@ -263,7 +263,7 @@ function AdminPanel({ token, isAdmin }) {
         ))}
 
         {mutation.isError && (
-          <p className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
+          <p className="rounded border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
             {mutation.error.message}
           </p>
         )}
@@ -271,14 +271,14 @@ function AdminPanel({ token, isAdmin }) {
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76] disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-[0_16px_40px_rgba(255,70,85,0.2)] transition hover:-translate-y-0.5 hover:bg-[#ff6b76] disabled:opacity-60 disabled:hover:translate-y-0"
         >
           <Plus className="h-4 w-4" />
           {mutation.isPending ? 'Creating' : `Create ${config.singular}`}
         </button>
       </form>
 
-      <div className="mt-5 border border-white/10 bg-black/30 p-4">
+      <div className="mt-5 rounded border border-white/10 bg-black/30 p-4">
         <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
           <Database className="h-4 w-4" />
           Saved Records
@@ -291,7 +291,7 @@ function AdminPanel({ token, isAdmin }) {
         ) : (
           <div className="grid max-h-64 gap-2 overflow-y-auto pr-1">
             {items.map((item) => (
-              <div key={item._id} className="border border-white/10 bg-white/[0.03] p-3">
+              <div key={item._id} className="rounded border border-white/10 bg-white/[0.03] p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-semibold text-white">
                     {item.name || item.handle || item._id}
@@ -335,7 +335,7 @@ function MatchResultForm({ match, value, isPending, error, onChange, onSubmit })
           min="0"
           value={value.teamAScore || '2'}
           onChange={(event) => onChange(match._id, 'teamAScore', event.target.value)}
-          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+          className="rounded border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none transition focus:border-[#45d3dc]/70"
         />
         <input
           aria-label={`${teamBName} score`}
@@ -343,7 +343,7 @@ function MatchResultForm({ match, value, isPending, error, onChange, onSubmit })
           min="0"
           value={value.teamBScore || '1'}
           onChange={(event) => onChange(match._id, 'teamBScore', event.target.value)}
-          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+          className="rounded border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none transition focus:border-[#45d3dc]/70"
         />
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -351,7 +351,7 @@ function MatchResultForm({ match, value, isPending, error, onChange, onSubmit })
           aria-label="Match winner"
           value={value.winner || teamAId}
           onChange={(event) => onChange(match._id, 'winner', event.target.value)}
-          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+          className="rounded border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none transition focus:border-[#45d3dc]/70"
         >
           <option value={teamAId}>{teamAName}</option>
           <option value={teamBId}>{teamBName}</option>
@@ -360,7 +360,7 @@ function MatchResultForm({ match, value, isPending, error, onChange, onSubmit })
           aria-label="First map winner"
           value={value.firstMapWinner || teamAId}
           onChange={(event) => onChange(match._id, 'firstMapWinner', event.target.value)}
-          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+          className="rounded border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none transition focus:border-[#45d3dc]/70"
         >
           <option value={teamAId}>{teamAName}</option>
           <option value={teamBId}>{teamBName}</option>
@@ -371,18 +371,18 @@ function MatchResultForm({ match, value, isPending, error, onChange, onSubmit })
         value={value.topFragger || ''}
         onChange={(event) => onChange(match._id, 'topFragger', event.target.value)}
         placeholder="Top fragger"
-        className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none placeholder:text-stone-600"
+        className="rounded border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none placeholder:text-stone-600 transition focus:border-[#45d3dc]/70"
       />
       <button
         type="button"
         disabled={isPending}
         onClick={() => onSubmit(match)}
-        className="inline-flex items-center justify-center bg-[#ff4655] px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white disabled:opacity-60"
+        className="inline-flex items-center justify-center rounded bg-[#ff4655] px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white transition hover:bg-[#ff6b76] disabled:opacity-60"
       >
         Complete Match
       </button>
       {error && (
-        <p className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-xs text-[#ffb0b7]">
+        <p className="rounded border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-xs text-[#ffb0b7]">
           {error}
         </p>
       )}
@@ -399,7 +399,7 @@ function AdminField({ field, value, onChange }) {
           name={field.name}
           value={value}
           onChange={onChange}
-          className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70"
+          className="w-full rounded border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70"
         >
           {field.options.map((option) => (
             <option key={option} value={option}>
@@ -413,7 +413,7 @@ function AdminField({ field, value, onChange }) {
 
   if (field.type === 'checkbox') {
     return (
-      <label className="flex items-center justify-between border border-white/10 bg-black/25 px-4 py-3 text-sm font-semibold text-stone-300">
+      <label className="flex items-center justify-between rounded border border-white/10 bg-black/25 px-4 py-3 text-sm font-semibold text-stone-300">
         {field.label}
         <input
           name={field.name}
@@ -435,7 +435,7 @@ function AdminField({ field, value, onChange }) {
         value={value}
         onChange={onChange}
         placeholder={field.placeholder}
-        className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70"
+        className="w-full rounded border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70"
       />
     </label>
   )
