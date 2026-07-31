@@ -22,6 +22,8 @@ const io = new Server(server, {
   },
 });
 
+app.set('io', io);
+
 io.on('connection', (socket) => {
   socket.emit('server:ready', {
     message: 'Real-time layer connected.',

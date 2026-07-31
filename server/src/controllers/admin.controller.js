@@ -4,10 +4,12 @@ const Player = require('../models/Player');
 const Team = require('../models/Team');
 const Tournament = require('../models/Tournament');
 const ValorantMap = require('../models/ValorantMap');
+const { scoreMatchPredictions } = require('../services/scoring.service');
 const {
   agentSchema,
   mapSchema,
   matchSchema,
+  matchResultSchema,
   playerSchema,
   teamSchema,
   tournamentSchema,
@@ -96,6 +98,66 @@ const matches = createResourceController(Match, matchSchema, {
   populate: ['tournament', 'teamA', 'teamB', 'winner'],
 });
 
+async function completeMatch(req, res) {
+  const parsed = matchResultSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Invalid match result',
+      errors: zodMessages(parsed.error),
+    });
+  }
+
+  const match = await Match.findById(req.params.id);
+
+  if (!match) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'Match not found',
+    });
+  }
+
+  const teamIds = [match.teamA.toString(), match.teamB.toString()];
+
+  if (
+    !teamIds.includes(parsed.data.winner) ||
+    !teamIds.includes(parsed.data.firstMapWinner)
+  ) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Result teams must belong to this match',
+    });
+  }
+
+  match.status = 'completed';
+  match.winner = parsed.data.winner;
+  match.score = parsed.data.score;
+  match.resultDetails = {
+    scoreline: parsed.data.scoreline,
+    firstMapWinner: parsed.data.firstMapWinner,
+    topFragger: parsed.data.topFragger || '',
+  };
+  await match.save();
+
+  const scoring = await scoreMatchPredictions(match);
+  const io = req.app.get('io');
+
+  if (io) {
+    io.emit('match:completed', { matchId: match._id.toString(), scoring });
+    io.emit('leaderboard:updated', { matchId: match._id.toString() });
+  }
+
+  await match.populate(['tournament', 'teamA', 'teamB', 'winner']);
+
+  return res.json({
+    status: 'success',
+    message: 'Match completed and predictions scored',
+    scoring,
+    item: match,
+  });
+}
+
 module.exports = {
   teams,
   players,
@@ -103,5 +165,5 @@ module.exports = {
   maps,
   agents,
   matches,
+  completeMatch,
 };
-

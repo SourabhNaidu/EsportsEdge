@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Database, Lock, Plus, RefreshCw } from 'lucide-react'
-import { createAdminResource, listAdminResource } from '../api/admin'
+import { completeMatch, createAdminResource, listAdminResource } from '../api/admin'
 
 const resourceConfigs = {
   teams: {
     title: 'Teams',
+    singular: 'Team',
     subtitle: 'Create Valorant teams used in matches and predictions.',
     fields: [
       { name: 'name', label: 'Team Name', placeholder: 'Paper Rex' },
@@ -17,6 +18,7 @@ const resourceConfigs = {
   },
   players: {
     title: 'Players',
+    singular: 'Player',
     subtitle: 'Add players and connect them to a team later.',
     fields: [
       { name: 'handle', label: 'Handle', placeholder: 'something' },
@@ -33,6 +35,7 @@ const resourceConfigs = {
   },
   tournaments: {
     title: 'Tournaments',
+    singular: 'Tournament',
     subtitle: 'Create events that matches belong to.',
     fields: [
       { name: 'name', label: 'Tournament Name', placeholder: 'VCT Champions' },
@@ -50,6 +53,7 @@ const resourceConfigs = {
   },
   matches: {
     title: 'Matches',
+    singular: 'Match',
     subtitle: 'Schedule match shells after teams and tournaments exist.',
     fields: [
       { name: 'tournament', label: 'Tournament ID', placeholder: 'MongoDB tournament id' },
@@ -68,6 +72,7 @@ const resourceConfigs = {
   },
   maps: {
     title: 'Maps',
+    singular: 'Map',
     subtitle: 'Manage the Valorant map pool.',
     fields: [
       { name: 'name', label: 'Map Name', placeholder: 'Ascent' },
@@ -77,6 +82,7 @@ const resourceConfigs = {
   },
   agents: {
     title: 'Agents',
+    singular: 'Agent',
     subtitle: 'Manage agents for future player and map analytics.',
     fields: [
       { name: 'name', label: 'Agent Name', placeholder: 'Jett' },
@@ -118,6 +124,7 @@ function AdminPanel({ token, isAdmin }) {
   const [resource, setResource] = useState('teams')
   const config = resourceConfigs[resource]
   const [form, setForm] = useState(() => getInitialForm(config))
+  const [resultForms, setResultForms] = useState({})
 
   const listQuery = useQuery({
     queryKey: ['admin', resource],
@@ -130,6 +137,14 @@ function AdminPanel({ token, isAdmin }) {
     onSuccess: () => {
       setForm(getInitialForm(config))
       queryClient.invalidateQueries({ queryKey: ['admin', resource] })
+    },
+  })
+  const resultMutation = useMutation({
+    mutationFn: ({ matchId, payload }) => completeMatch(token, matchId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'matches'] })
+      queryClient.invalidateQueries({ queryKey: ['matches'] })
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
     },
   })
 
@@ -152,6 +167,39 @@ function AdminPanel({ token, isAdmin }) {
   function handleSubmit(event) {
     event.preventDefault()
     mutation.mutate(cleanPayload(form, config.fields))
+  }
+
+  function updateResult(matchId, field, value) {
+    setResultForms((current) => ({
+      ...current,
+      [matchId]: {
+        ...current[matchId],
+        [field]: value,
+      },
+    }))
+  }
+
+  function submitResult(match) {
+    const formState = resultForms[match._id] || {}
+    const teamAId = match.teamA?._id || match.teamA
+    const teamBId = match.teamB?._id || match.teamB
+    const scoreTeamA = Number(formState.teamAScore || 2)
+    const scoreTeamB = Number(formState.teamBScore || 1)
+    const winner = formState.winner || (scoreTeamA >= scoreTeamB ? teamAId : teamBId)
+
+    resultMutation.mutate({
+      matchId: match._id,
+      payload: {
+        winner,
+        score: {
+          teamA: scoreTeamA,
+          teamB: scoreTeamB,
+        },
+        scoreline: formState.scoreline || `${Math.max(scoreTeamA, scoreTeamB)}-${Math.min(scoreTeamA, scoreTeamB)}`,
+        firstMapWinner: formState.firstMapWinner || winner,
+        topFragger: formState.topFragger || '',
+      },
+    })
   }
 
   if (!isAdmin) {
@@ -226,7 +274,7 @@ function AdminPanel({ token, isAdmin }) {
           className="inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76] disabled:opacity-60"
         >
           <Plus className="h-4 w-4" />
-          {mutation.isPending ? 'Creating' : `Create ${config.title.slice(0, -1)}`}
+          {mutation.isPending ? 'Creating' : `Create ${config.singular}`}
         </button>
       </form>
 
@@ -253,12 +301,92 @@ function AdminPanel({ token, isAdmin }) {
                 <p className="mt-1 text-sm capitalize text-stone-400">
                   {config.summary(item)}
                 </p>
+                {resource === 'matches' && item.status !== 'completed' && (
+                  <MatchResultForm
+                    match={item}
+                    value={resultForms[item._id] || {}}
+                    isPending={resultMutation.isPending}
+                    error={resultMutation.variables?.matchId === item._id ? resultMutation.error?.message : ''}
+                    onChange={updateResult}
+                    onSubmit={submitResult}
+                  />
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
     </section>
+  )
+}
+
+function MatchResultForm({ match, value, isPending, error, onChange, onSubmit }) {
+  const teamAId = match.teamA?._id || match.teamA
+  const teamBId = match.teamB?._id || match.teamB
+  const teamAName = match.teamA?.name || 'Team A'
+  const teamBName = match.teamB?.name || 'Team B'
+
+  return (
+    <div className="mt-3 grid gap-2 border-t border-white/10 pt-3">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input
+          aria-label={`${teamAName} score`}
+          type="number"
+          min="0"
+          value={value.teamAScore || '2'}
+          onChange={(event) => onChange(match._id, 'teamAScore', event.target.value)}
+          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+        />
+        <input
+          aria-label={`${teamBName} score`}
+          type="number"
+          min="0"
+          value={value.teamBScore || '1'}
+          onChange={(event) => onChange(match._id, 'teamBScore', event.target.value)}
+          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+        />
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <select
+          aria-label="Match winner"
+          value={value.winner || teamAId}
+          onChange={(event) => onChange(match._id, 'winner', event.target.value)}
+          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+        >
+          <option value={teamAId}>{teamAName}</option>
+          <option value={teamBId}>{teamBName}</option>
+        </select>
+        <select
+          aria-label="First map winner"
+          value={value.firstMapWinner || teamAId}
+          onChange={(event) => onChange(match._id, 'firstMapWinner', event.target.value)}
+          className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none"
+        >
+          <option value={teamAId}>{teamAName}</option>
+          <option value={teamBId}>{teamBName}</option>
+        </select>
+      </div>
+      <input
+        aria-label="Top fragger result"
+        value={value.topFragger || ''}
+        onChange={(event) => onChange(match._id, 'topFragger', event.target.value)}
+        placeholder="Top fragger"
+        className="border border-white/10 bg-black/35 px-3 py-2 text-sm text-white outline-none placeholder:text-stone-600"
+      />
+      <button
+        type="button"
+        disabled={isPending}
+        onClick={() => onSubmit(match)}
+        className="inline-flex items-center justify-center bg-[#ff4655] px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white disabled:opacity-60"
+      >
+        Complete Match
+      </button>
+      {error && (
+        <p className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-xs text-[#ffb0b7]">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -314,4 +442,3 @@ function AdminField({ field, value, onChange }) {
 }
 
 export default AdminPanel
-

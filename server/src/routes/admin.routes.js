@@ -21,5 +21,6 @@ resources.forEach(([path, controller]) => {
   router.post(`/${path}`, asyncHandler(controller.create));
 });
 
-module.exports = router;
+router.post('/matches/:id/result', asyncHandler(adminController.completeMatch));
 
+module.exports = router;

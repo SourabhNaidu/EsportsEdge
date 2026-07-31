@@ -47,6 +47,17 @@ const matchSchema = z.object({
   status: z.enum(['upcoming', 'live', 'completed']).optional(),
 });
 
+const matchResultSchema = z.object({
+  winner: objectId,
+  score: z.object({
+    teamA: z.coerce.number().min(0),
+    teamB: z.coerce.number().min(0),
+  }),
+  scoreline: z.enum(['1-0', '2-0', '2-1', '3-0', '3-1', '3-2']),
+  firstMapWinner: objectId,
+  topFragger: z.string().trim().max(40).optional(),
+});
+
 module.exports = {
   teamSchema,
   playerSchema,
@@ -54,5 +65,5 @@ module.exports = {
   mapSchema,
   agentSchema,
   matchSchema,
+  matchResultSchema,
 };
-

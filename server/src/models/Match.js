@@ -46,6 +46,23 @@ const matchSchema = new mongoose.Schema(
         default: 0,
       },
     },
+    resultDetails: {
+      scoreline: {
+        type: String,
+        enum: ['1-0', '2-0', '2-1', '3-0', '3-1', '3-2', ''],
+        default: '',
+      },
+      firstMapWinner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Team',
+        default: null,
+      },
+      topFragger: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+    },
   },
   { timestamps: true },
 );
@@ -59,4 +76,3 @@ matchSchema.pre('validate', function validateTeams(next) {
 });
 
 module.exports = mongoose.model('Match', matchSchema);
-

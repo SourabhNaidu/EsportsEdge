@@ -29,3 +29,9 @@ export function createAdminResource(resource, token, payload) {
   });
 }
 
+export function completeMatch(token, matchId, payload) {
+  return adminRequest(`/matches/${matchId}/result`, token, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

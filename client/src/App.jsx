@@ -22,7 +22,10 @@ import { getProfile, loginUser, registerUser } from './api/auth'
 import { getApiHealth } from './api/health'
 import { listMatches } from './api/matches'
 import { createPrediction, getMyPrediction } from './api/predictions'
+import { getMatchAnalytics } from './api/analytics'
+import { getLeaderboard } from './api/leaderboard'
 import AdminPanel from './components/AdminPanel'
+import { createSocket } from './lib/socket'
 
 const TOKEN_KEY = 'esportsedge_token'
 
@@ -57,34 +60,6 @@ const featuredMatches = [
   },
 ]
 
-const leaderboard = [
-  ['vandalVision', '1,240', '68%'],
-  ['clutchIndex', '1,090', '64%'],
-  ['ecoHunter', '980', '61%'],
-  ['spikeRead', '925', '59%'],
-]
-
-const insights = [
-  {
-    label: 'Momentum Score',
-    value: '82',
-    detail: 'PRX won 7 of their last 10 maps and start faster on attack halves.',
-    icon: Flame,
-  },
-  {
-    label: 'Map Advantage',
-    value: '+12%',
-    detail: 'Fnatic are stronger on Bind, but PRX gain value if Split appears.',
-    icon: Target,
-  },
-  {
-    label: 'Upset Alert',
-    value: 'Medium',
-    detail: 'Prediction crowd is leaning favorite, while form signals stay close.',
-    icon: Zap,
-  },
-]
-
 function App() {
   const queryClient = useQueryClient()
   const [view, setView] = useState('home')
@@ -92,6 +67,8 @@ function App() {
   const [selectedMatchId, setSelectedMatchId] = useState(null)
   const [matchSearch, setMatchSearch] = useState('')
   const [matchStatus, setMatchStatus] = useState('')
+  const [socketConnected, setSocketConnected] = useState(false)
+  const [liveNotice, setLiveNotice] = useState('')
 
   const healthQuery = useQuery({
     queryKey: ['api-health'],
@@ -119,6 +96,34 @@ function App() {
     matches.find((match) => match._id === selectedMatchId || match.id === selectedMatchId) ||
     matches[0] ||
     featuredMatches[0]
+  const analyticsQuery = useQuery({
+    queryKey: ['analytics', selectedMatch._id || selectedMatch.id],
+    queryFn: () => getMatchAnalytics(selectedMatch._id),
+    enabled: Boolean(selectedMatch._id),
+  })
+  const leaderboardQuery = useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: getLeaderboard,
+  })
+
+  useEffect(() => {
+    const socket = createSocket()
+
+    socket.on('connect', () => setSocketConnected(true))
+    socket.on('disconnect', () => setSocketConnected(false))
+    socket.on('server:ready', (payload) => setLiveNotice(payload.message))
+    socket.on('match:completed', () => {
+      setLiveNotice('A match result was added.')
+      queryClient.invalidateQueries({ queryKey: ['matches'] })
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
+    })
+    socket.on('leaderboard:updated', () => {
+      setLiveNotice('Leaderboard updated.')
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
+    })
+
+    return () => socket.disconnect()
+  }, [queryClient])
   const heroPanel = view === 'admin'
     ? <AdminPanel token={token} isAdmin={isAdmin} />
     : view === 'login'
@@ -175,6 +180,7 @@ function App() {
             token={token}
             isAdmin={isAdmin}
             apiOnline={apiOnline}
+            socketConnected={socketConnected}
             setView={setView}
             logout={logout}
           />
@@ -218,8 +224,13 @@ function App() {
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 <Metric label="Prediction pool" value="18.4K" />
                 <Metric label="Avg accuracy" value="63%" />
-                <Metric label="Live matches" value="12" />
+                <Metric label="Realtime" value={socketConnected ? 'On' : 'Demo'} />
               </div>
+              {liveNotice && (
+                <p className="mt-4 inline-flex border border-[#45d3dc]/30 bg-[#45d3dc]/10 px-3 py-2 text-sm text-[#a7f3f7]">
+                  {liveNotice}
+                </p>
+              )}
             </section>
 
             {heroPanel}
@@ -242,12 +253,12 @@ function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' })
           }}
         />
-        <Leaderboard />
+        <Leaderboard data={leaderboardQuery.data?.items} isLoading={leaderboardQuery.isLoading} />
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-5 pb-14 sm:px-8 lg:px-10">
         <div className="grid gap-4 lg:grid-cols-3">
-          {insights.map((item) => (
+          {buildInsights(analyticsQuery.data?.analytics).map((item) => (
             <InsightCard key={item.label} {...item} />
           ))}
         </div>
@@ -256,7 +267,7 @@ function App() {
   )
 }
 
-function Nav({ view, token, isAdmin, apiOnline, setView, logout }) {
+function Nav({ view, token, isAdmin, apiOnline, socketConnected, setView, logout }) {
   return (
     <nav className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
       <button type="button" onClick={() => setView('home')} className="flex items-center gap-3">
@@ -272,7 +283,7 @@ function Nav({ view, token, isAdmin, apiOnline, setView, logout }) {
       </button>
 
       <div className="flex flex-wrap items-center gap-2">
-        <StatusDot apiOnline={apiOnline} />
+        <StatusDot apiOnline={apiOnline} socketConnected={socketConnected} />
         <NavButton active={view === 'home'} onClick={() => setView('home')}>
           Matches
         </NavButton>
@@ -310,11 +321,11 @@ function Nav({ view, token, isAdmin, apiOnline, setView, logout }) {
   )
 }
 
-function StatusDot({ apiOnline }) {
+function StatusDot({ apiOnline, socketConnected }) {
   return (
     <div className="hidden items-center gap-2 border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-stone-300 sm:flex">
       <span className={`h-2 w-2 rounded-full ${apiOnline ? 'bg-emerald-400' : 'bg-[#45d3dc]'}`} />
-      {apiOnline ? 'Live API' : 'Demo preview'}
+      {apiOnline ? (socketConnected ? 'Live API' : 'API ready') : 'Demo preview'}
     </div>
   )
 }
@@ -626,7 +637,16 @@ function formatMatchTime(startsAt, fallback) {
   }).format(new Date(startsAt))
 }
 
-function Leaderboard() {
+function Leaderboard({ data, isLoading }) {
+  const rows = data?.length
+    ? data
+    : [
+        { username: 'vandalVision', totalPoints: 1240, accuracy: 68 },
+        { username: 'clutchIndex', totalPoints: 1090, accuracy: 64 },
+        { username: 'ecoHunter', totalPoints: 980, accuracy: 61 },
+        { username: 'spikeRead', totalPoints: 925, accuracy: 59 },
+      ]
+
   return (
     <section className="border border-white/10 bg-[#0d1016] p-5">
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -640,21 +660,46 @@ function Leaderboard() {
       </div>
 
       <div className="mt-5 grid gap-2">
-        {leaderboard.map(([name, points, accuracy], index) => (
-          <div key={name} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border border-white/10 bg-black/25 p-3">
+        {isLoading ? (
+          <p className="text-sm text-stone-400">Loading leaderboard...</p>
+        ) : rows.map((row, index) => (
+          <div key={row.username} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border border-white/10 bg-black/25 p-3">
             <span className="grid h-9 w-9 place-items-center bg-white/[0.06] text-sm font-black text-white">
               {index + 1}
             </span>
             <div>
-              <p className="font-semibold text-white">{name}</p>
-              <p className="text-xs text-stone-500">{accuracy} accuracy</p>
+              <p className="font-semibold text-white">{row.username}</p>
+              <p className="text-xs text-stone-500">{row.accuracy}% accuracy</p>
             </div>
-            <p className="font-black text-[#45d3dc]">{points}</p>
+            <p className="font-black text-[#45d3dc]">{row.totalPoints.toLocaleString()}</p>
           </div>
         ))}
       </div>
     </section>
   )
+}
+
+function buildInsights(analytics) {
+  return [
+    {
+      label: 'Momentum Score',
+      value: String(analytics?.momentumScore ?? 82),
+      detail: analytics?.explanation || 'Recent form is converted into a readable team momentum signal.',
+      icon: Flame,
+    },
+    {
+      label: 'Map Advantage',
+      value: analytics?.mapAdvantage || '+12%',
+      detail: 'Map edge uses current form and matchup context until full map history is seeded.',
+      icon: Target,
+    },
+    {
+      label: 'Upset Alert',
+      value: analytics?.upsetAlert || 'Medium',
+      detail: 'Closer form gaps raise upset risk and warn users when crowd picks may be fragile.',
+      icon: Zap,
+    },
+  ]
 }
 
 function InsightCard({ label, value, detail, icon: Icon }) {

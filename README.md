@@ -21,6 +21,11 @@ Valorant-first esports prediction and analytics platform.
 - Match board UI with selectable match details
 - Prediction API with one prediction per user per match
 - Prediction UI for winner, scoreline, top fragger, and first map winner
+- Admin match result entry
+- Automatic prediction scoring after a result is submitted
+- Leaderboard API and UI
+- Rule-based match analytics API and UI
+- Socket.IO live notifications for completed matches and leaderboard updates
 
 ## Run Locally
 
@@ -34,6 +39,10 @@ npm --prefix client install
 2. Create `.env` from `.env.example`.
 
 3. Start MongoDB locally for register/login/admin data to work.
+
+```bash
+docker compose up -d mongo
+```
 
 4. Set an `ADMIN_INVITE_CODE` in `.env` if you want to create an admin account.
 
@@ -67,6 +76,7 @@ All admin endpoints require an admin JWT.
 - `POST /api/admin/tournaments`
 - `GET /api/admin/matches`
 - `POST /api/admin/matches`
+- `POST /api/admin/matches/:id/result`
 - `GET /api/admin/maps`
 - `POST /api/admin/maps`
 - `GET /api/admin/agents`
@@ -84,6 +94,20 @@ When MongoDB is offline, the match list returns demo fixtures so the frontend st
 - `POST /api/predictions`: create a match prediction, requires login
 - `GET /api/predictions/matches/:matchId/me`: view your prediction for a match
 - `GET /api/predictions/matches/:matchId/percentages`: view prediction crowd percentages
+
+## Analytics And Leaderboard
+
+- `GET /api/analytics/matches/:matchId`: rule-based momentum, map advantage, and upset alert
+- `GET /api/leaderboard`: ranked users by prediction points
+
+## MVP Flow
+
+1. Register with `ADMIN_INVITE_CODE` to create an admin.
+2. Use Admin to create teams, a tournament, and a match.
+3. Register or login as a normal user.
+4. Pick a match winner, scoreline, top fragger, and first map winner.
+5. Login as admin and complete the match result.
+6. Predictions are scored and leaderboard updates.
 
 ## Scripts
 
