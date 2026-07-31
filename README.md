@@ -17,6 +17,10 @@ Valorant-first esports prediction and analytics platform.
 - Register/login/profile UI flow
 - Admin-only APIs for teams, players, tournaments, matches, maps, and agents
 - Admin panel UI for creating and listing core esports data
+- Public match browsing API with search and status filters
+- Match board UI with selectable match details
+- Prediction API with one prediction per user per match
+- Prediction UI for winner, scoreline, top fragger, and first map winner
 
 ## Run Locally
 
@@ -67,6 +71,19 @@ All admin endpoints require an admin JWT.
 - `POST /api/admin/maps`
 - `GET /api/admin/agents`
 - `POST /api/admin/agents`
+
+## Match Endpoints
+
+- `GET /api/matches`: list matches, supports `status` and `q` query params
+- `GET /api/matches/:id`: view match details
+
+When MongoDB is offline, the match list returns demo fixtures so the frontend still works as a deployable preview.
+
+## Prediction Endpoints
+
+- `POST /api/predictions`: create a match prediction, requires login
+- `GET /api/predictions/matches/:matchId/me`: view your prediction for a match
+- `GET /api/predictions/matches/:matchId/percentages`: view prediction crowd percentages
 
 ## Scripts
 

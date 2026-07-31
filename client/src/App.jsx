@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Activity,
@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import { getProfile, loginUser, registerUser } from './api/auth'
 import { getApiHealth } from './api/health'
+import { listMatches } from './api/matches'
+import { createPrediction, getMyPrediction } from './api/predictions'
 import AdminPanel from './components/AdminPanel'
 
 const TOKEN_KEY = 'esportsedge_token'
@@ -87,6 +89,9 @@ function App() {
   const queryClient = useQueryClient()
   const [view, setView] = useState('home')
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY))
+  const [selectedMatchId, setSelectedMatchId] = useState(null)
+  const [matchSearch, setMatchSearch] = useState('')
+  const [matchStatus, setMatchStatus] = useState('')
 
   const healthQuery = useQuery({
     queryKey: ['api-health'],
@@ -101,9 +106,20 @@ function App() {
     retry: false,
   })
 
+  const matchesQuery = useQuery({
+    queryKey: ['matches', matchStatus, matchSearch],
+    queryFn: () => listMatches({ status: matchStatus, q: matchSearch }),
+  })
+
   const user = profileQuery.data?.user
   const isAdmin = user?.role === 'admin'
   const apiOnline = !healthQuery.isError && !healthQuery.isLoading
+  const matches = matchesQuery.data?.items?.length
+    ? matchesQuery.data.items
+    : featuredMatches
+  const selectedMatch =
+    matches.find((match) => match._id === selectedMatchId || match.id === selectedMatchId) ||
+    matches[0]
   const heroPanel = view === 'admin'
     ? <AdminPanel token={token} isAdmin={isAdmin} />
     : view === 'login'
@@ -120,7 +136,14 @@ function App() {
               onLogin={() => setView('login')}
             />
           )
-          : <PredictionCard apiOnline={apiOnline} />
+          : (
+            <PredictionCard
+              apiOnline={apiOnline}
+              match={selectedMatch}
+              token={token}
+              onLogin={() => setView('login')}
+            />
+          )
 
   function handleAuthSuccess(result) {
     localStorage.setItem(TOKEN_KEY, result.token)
@@ -206,7 +229,20 @@ function App() {
       </section>
 
       <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-12 sm:px-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-10">
-        <MatchBoard />
+        <MatchBoard
+          matches={matches}
+          search={matchSearch}
+          status={matchStatus}
+          source={matchesQuery.data?.source || 'demo'}
+          isLoading={matchesQuery.isLoading}
+          onSearch={setMatchSearch}
+          onStatus={setMatchStatus}
+          onSelect={(match) => {
+            setSelectedMatchId(match._id || match.id)
+            setView('home')
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
+        />
         <Leaderboard />
       </section>
 
@@ -309,8 +345,62 @@ function Metric({ label, value }) {
   )
 }
 
-function PredictionCard({ apiOnline }) {
-  const match = featuredMatches[0]
+function PredictionCard({ apiOnline, match, token, onLogin }) {
+  const queryClient = useQueryClient()
+  const teamAId = match.teamA?._id || match.teamAId
+  const teamBId = match.teamB?._id || match.teamBId
+  const isRealMatch = /^[0-9a-fA-F]{24}$/.test(match._id || '')
+  const [form, setForm] = useState({
+    winner: teamAId,
+    scoreline: '2-1',
+    firstMapWinner: teamAId,
+    topFragger: '',
+  })
+
+  useEffect(() => {
+    setForm({
+      winner: teamAId,
+      scoreline: '2-1',
+      firstMapWinner: teamAId,
+      topFragger: '',
+    })
+  }, [match._id, teamAId])
+  const myPredictionQuery = useQuery({
+    queryKey: ['my-prediction', match._id, token],
+    queryFn: () => getMyPrediction(token, match._id),
+    enabled: Boolean(token && isRealMatch),
+    retry: false,
+  })
+  const mutation = useMutation({
+    mutationFn: (payload) => createPrediction(token, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-prediction', match._id] })
+      queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
+  })
+  const prediction = myPredictionQuery.data?.item
+  const isLocked = new Date(match.startsAt) <= new Date() || match.status !== 'upcoming'
+
+  function updateField(event) {
+    setForm((current) => ({
+      ...current,
+      [event.target.name]: event.target.value,
+    }))
+  }
+
+  function submitPrediction(event) {
+    event.preventDefault()
+
+    if (!token) {
+      onLogin()
+      return
+    }
+
+    mutation.mutate({
+      match: match._id,
+      ...form,
+    })
+  }
 
   return (
     <section className="border border-white/10 bg-[#0d1016]/88 p-5 shadow-2xl shadow-black/40 backdrop-blur">
@@ -319,31 +409,120 @@ function PredictionCard({ apiOnline }) {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#45d3dc]">
             Featured Pick
           </p>
-          <h2 className="mt-1 text-2xl font-bold text-white">{match.stage}</h2>
+          <h2 className="mt-1 text-2xl font-bold text-white">
+            {match.tournament?.name || match.tournament}
+          </h2>
         </div>
         <RadioTower className={`h-7 w-7 ${apiOnline ? 'text-emerald-300' : 'text-[#45d3dc]'}`} />
       </div>
 
       <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-        <TeamMark tag={match.tagA} name={match.teamA} align="left" />
+        <TeamMark
+          tag={match.teamA?.shortName || match.tagA}
+          name={match.teamA?.name || match.teamA}
+          align="left"
+        />
         <span className="text-xs font-black uppercase tracking-[0.18em] text-stone-500">vs</span>
-        <TeamMark tag={match.tagB} name={match.teamB} align="right" />
+        <TeamMark
+          tag={match.teamB?.shortName || match.tagB}
+          name={match.teamB?.name || match.teamB}
+          align="right"
+        />
       </div>
 
       <div className="mt-6">
         <div className="mb-2 flex justify-between text-sm text-stone-400">
-          <span>{match.tagA} win crowd</span>
-          <span>{match.winA}%</span>
+          <span>{match.teamA?.shortName || match.tagA} win crowd</span>
+          <span>{match.predictionPercentages?.teamA || match.winA}%</span>
         </div>
         <div className="h-3 overflow-hidden bg-white/10">
-          <div className="h-full bg-[#ff4655]" style={{ width: `${match.winA}%` }} />
+          <div
+            className="h-full bg-[#ff4655]"
+            style={{ width: `${match.predictionPercentages?.teamA || match.winA}%` }}
+          />
         </div>
       </div>
 
       <p className="mt-5 border border-[#45d3dc]/20 bg-[#45d3dc]/10 p-4 text-sm leading-6 text-stone-200">
         {match.insight}
       </p>
+
+      <form className="mt-5 grid gap-3" onSubmit={submitPrediction}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <SelectField label="Winner" name="winner" value={form.winner} onChange={updateField}>
+            <option value={teamAId}>{match.teamA?.name || match.teamA}</option>
+            <option value={teamBId}>{match.teamB?.name || match.teamB}</option>
+          </SelectField>
+          <SelectField
+            label="Scoreline"
+            name="scoreline"
+            value={form.scoreline}
+            onChange={updateField}
+          >
+            {['2-0', '2-1', '3-0', '3-1', '3-2', '1-0'].map((score) => (
+              <option key={score} value={score}>{score}</option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="First Map"
+            name="firstMapWinner"
+            value={form.firstMapWinner}
+            onChange={updateField}
+          >
+            <option value={teamAId}>{match.teamA?.name || match.teamA}</option>
+            <option value={teamBId}>{match.teamB?.name || match.teamB}</option>
+          </SelectField>
+          <Field
+            label="Top Fragger"
+            name="topFragger"
+            value={form.topFragger}
+            onChange={updateField}
+            placeholder="player handle"
+          />
+        </div>
+
+        {prediction && (
+          <p className="border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
+            Prediction saved: {prediction.winner?.name} {prediction.scoreline}
+          </p>
+        )}
+        {mutation.isError && (
+          <p className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
+            {mutation.error.message}
+          </p>
+        )}
+        {!isRealMatch && (
+          <p className="text-xs leading-5 text-stone-500">
+            Demo fixture shown. Add real matches from Admin to save predictions.
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={mutation.isPending || Boolean(prediction) || isLocked || !isRealMatch}
+          className="inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Target className="h-4 w-4" />
+          {!token ? 'Login To Predict' : isLocked ? 'Predictions Locked' : prediction ? 'Pick Saved' : 'Lock Pick'}
+        </button>
+      </form>
     </section>
+  )
+}
+
+function SelectField({ label, name, value, onChange, children }) {
+  return (
+    <label className="grid gap-2 text-sm font-semibold text-stone-300">
+      {label}
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70"
+      >
+        {children}
+      </select>
+    </label>
   )
 }
 
@@ -358,7 +537,7 @@ function TeamMark({ tag, name, align }) {
   )
 }
 
-function MatchBoard() {
+function MatchBoard({ matches, search, status, source, isLoading, onSearch, onStatus, onSelect }) {
   return (
     <section className="border border-white/10 bg-[#0d1016] p-5">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
@@ -367,32 +546,77 @@ function MatchBoard() {
             Match Board
           </p>
           <h2 className="mt-1 text-2xl font-bold text-white">Upcoming Valorant Fixtures</h2>
+          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-stone-500">
+            Source: {source}
+          </p>
         </div>
         <Trophy className="h-7 w-7 text-[#ff4655]" />
       </div>
 
+      <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
+        <input
+          value={search}
+          onChange={(event) => onSearch(event.target.value)}
+          placeholder="Search teams or tournaments"
+          className="w-full border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition placeholder:text-stone-600 focus:border-[#45d3dc]/70"
+        />
+        <select
+          value={status}
+          onChange={(event) => onStatus(event.target.value)}
+          className="border border-white/10 bg-black/35 px-4 py-3 text-base text-white outline-none transition focus:border-[#45d3dc]/70"
+        >
+          <option value="">All</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="live">Live</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
       <div className="mt-5 grid gap-3">
-        {featuredMatches.map((match) => (
-          <article key={match.id} className="border border-white/10 bg-black/25 p-4">
+        {isLoading ? (
+          <p className="text-sm text-stone-400">Loading matches...</p>
+        ) : matches.map((match) => (
+          <article key={match._id || match.id} className="border border-white/10 bg-black/25 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-                  {match.tournament} - {match.time}
+                  {match.tournament?.name || match.tournament} - {formatMatchTime(match.startsAt, match.time)}
                 </p>
                 <h3 className="mt-2 text-xl font-bold text-white">
-                  {match.teamA} vs {match.teamB}
+                  {match.teamA?.name || match.teamA} vs {match.teamB?.name || match.teamB}
                 </h3>
               </div>
               <span className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#ffb0b7]">
-                {match.alert}
+                {match.status || match.alert}
               </span>
             </div>
             <p className="mt-3 text-sm leading-6 text-stone-400">{match.insight}</p>
+            <button
+              type="button"
+              onClick={() => onSelect(match)}
+              className="mt-4 inline-flex items-center gap-2 border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-stone-200 transition hover:bg-white/[0.08]"
+            >
+              <Target className="h-4 w-4" />
+              View Pick
+            </button>
           </article>
         ))}
       </div>
     </section>
   )
+}
+
+function formatMatchTime(startsAt, fallback) {
+  if (!startsAt) {
+    return fallback
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(startsAt))
 }
 
 function Leaderboard() {
