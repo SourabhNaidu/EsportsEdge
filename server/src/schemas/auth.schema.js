@@ -8,6 +8,7 @@ const registerSchema = z.object({
     .max(24, 'Username must be 24 characters or less'),
   email: z.string().trim().email('Enter a valid email address').toLowerCase(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
+  adminInviteCode: z.string().trim().optional(),
 });
 
 const loginSchema = z.object({
@@ -19,4 +20,3 @@ module.exports = {
   registerSchema,
   loginSchema,
 };
-

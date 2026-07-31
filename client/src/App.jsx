@@ -5,6 +5,7 @@ import {
   BarChart3,
   Crown,
   Database,
+  Gem,
   Lock,
   LogIn,
   LogOut,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react'
 import { getProfile, loginUser, registerUser } from './api/auth'
 import { getApiHealth } from './api/health'
+import AdminPanel from './components/AdminPanel'
 
 const TOKEN_KEY = 'esportsedge_token'
 
@@ -41,6 +43,7 @@ function App() {
   const apiStatus = isLoading ? 'Checking' : isError ? 'Offline' : 'Online'
   const dbStatus = data?.database?.connected ? 'Connected' : 'Waiting'
   const user = profileQuery.data?.user
+  const isAdmin = user?.role === 'admin'
 
   function handleAuthSuccess(result) {
     localStorage.setItem(TOKEN_KEY, result.token)
@@ -93,6 +96,14 @@ function App() {
                   >
                     Profile
                   </NavButton>
+                  {isAdmin && (
+                    <NavButton
+                      active={view === 'admin'}
+                      onClick={() => setView('admin')}
+                    >
+                      Admin
+                    </NavButton>
+                  )}
                   <button
                     type="button"
                     onClick={logout}
@@ -125,27 +136,27 @@ function App() {
             <section className="max-w-3xl">
               <div className="mb-6 inline-flex items-center gap-2 border border-[#ff4655]/40 bg-[#ff4655]/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#ff9aa3]">
                 <Activity className="h-4 w-4" />
-                Phase 2 auth workflow
+                Phase 3 admin data
               </div>
 
               <h1 className="max-w-4xl text-5xl font-black uppercase leading-[0.95] text-white sm:text-6xl lg:text-7xl">
-                Sign in before the prediction round starts.
+                Build the data room behind every match.
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-stone-300 sm:text-lg">
-                The platform now supports register, login, saved auth tokens,
-                and a protected profile view. This is the gate every prediction,
-                leaderboard score, and admin workflow will pass through later.
+                Admins can now create the core Valorant records: teams, players,
+                tournaments, matches, maps, and agents. This data becomes the
+                foundation for match browsing, predictions, and analytics.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
-                  onClick={() => setView(token ? 'profile' : 'register')}
+                  onClick={() => setView(isAdmin ? 'admin' : token ? 'profile' : 'register')}
                   className="inline-flex items-center justify-center gap-2 bg-[#ff4655] px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#ff6b76]"
                 >
-                  {token ? <ShieldCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                  {token ? 'Open Profile' : 'Create Account'}
+                  {isAdmin ? <Gem className="h-4 w-4" /> : token ? <ShieldCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                  {isAdmin ? 'Open Admin' : token ? 'Open Profile' : 'Create Account'}
                 </button>
                 <button
                   type="button"
@@ -160,7 +171,7 @@ function App() {
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 <FeaturePill icon={<Shield className="h-4 w-4" />} label="JWT session" />
                 <FeaturePill icon={<Lock className="h-4 w-4" />} label="Protected API" />
-                <FeaturePill icon={<Crown className="h-4 w-4" />} label="Role ready" />
+                <FeaturePill icon={<Crown className="h-4 w-4" />} label="Admin data" />
               </div>
             </section>
 
@@ -174,6 +185,9 @@ function App() {
                 error={profileQuery.error}
                 onLogin={() => setView('login')}
               />
+            )}
+            {view === 'admin' && (
+              <AdminPanel token={token} isAdmin={isAdmin} />
             )}
             {view === 'home' && (
               <SystemPanel
@@ -221,6 +235,7 @@ function AuthPanel({ mode, onSuccess }) {
     username: '',
     email: '',
     password: '',
+    adminInviteCode: '',
   })
   const isRegister = mode === 'register'
   const mutation = useMutation({
@@ -291,6 +306,15 @@ function AuthPanel({ mode, onSuccess }) {
           onChange={updateField}
           placeholder="At least 8 characters"
         />
+        {isRegister && (
+          <Field
+            label="Admin Invite Code"
+            name="adminInviteCode"
+            value={form.adminInviteCode}
+            onChange={updateField}
+            placeholder="Optional"
+          />
+        )}
 
         {mutation.isError && (
           <p className="border border-[#ff4655]/35 bg-[#ff4655]/10 px-3 py-2 text-sm text-[#ffb0b7]">
@@ -414,7 +438,7 @@ function SystemPanel({ apiStatus, dbStatus, healthData, isLoading, isError }) {
             System Pulse
           </p>
           <h2 className="mt-1 text-2xl font-bold text-white">
-            Phase 2 Integration
+            Phase 3 Integration
           </h2>
         </div>
         <BarChart3 className="h-7 w-7 text-[#ff4655]" />
@@ -442,7 +466,7 @@ function SystemPanel({ apiStatus, dbStatus, healthData, isLoading, isError }) {
         <StatusTile
           icon={<Swords className="h-5 w-5" />}
           label="Next Flow"
-          value="Admin"
+          value="Matches"
           tone="neutral"
         />
       </div>

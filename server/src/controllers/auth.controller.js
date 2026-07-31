@@ -20,7 +20,7 @@ async function register(req, res) {
     });
   }
 
-  const { username, email, password } = parsed.data;
+  const { username, email, password, adminInviteCode } = parsed.data;
   const existingUser = await User.findOne({
     $or: [{ email }, { username }],
   });
@@ -33,10 +33,16 @@ async function register(req, res) {
   }
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  const role =
+    process.env.ADMIN_INVITE_CODE && adminInviteCode === process.env.ADMIN_INVITE_CODE
+      ? 'admin'
+      : 'user';
+
   const user = await User.create({
     username,
     email,
     passwordHash,
+    role,
   });
   const token = signAuthToken(user);
 
@@ -100,4 +106,3 @@ module.exports = {
   login,
   getProfile,
 };
-

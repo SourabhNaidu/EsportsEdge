@@ -1,0 +1,107 @@
+const Agent = require('../models/Agent');
+const Match = require('../models/Match');
+const Player = require('../models/Player');
+const Team = require('../models/Team');
+const Tournament = require('../models/Tournament');
+const ValorantMap = require('../models/ValorantMap');
+const {
+  agentSchema,
+  mapSchema,
+  matchSchema,
+  playerSchema,
+  teamSchema,
+  tournamentSchema,
+} = require('../schemas/admin.schema');
+
+function zodMessages(error) {
+  return error.issues.map((issue) => issue.message);
+}
+
+function createResourceController(Model, schema, options = {}) {
+  return {
+    list: async (req, res) => {
+      const query = Model.find().sort(options.sort || { createdAt: -1 });
+
+      if (options.populate) {
+        options.populate.forEach((field) => query.populate(field));
+      }
+
+      const items = await query;
+
+      return res.json({
+        status: 'success',
+        count: items.length,
+        items,
+      });
+    },
+
+    create: async (req, res) => {
+      const parsed = schema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Invalid admin data',
+          errors: zodMessages(parsed.error),
+        });
+      }
+
+      const payload = options.normalize ? options.normalize(parsed.data) : parsed.data;
+      const item = await Model.create(payload);
+
+      if (options.populate) {
+        await item.populate(options.populate);
+      }
+
+      return res.status(201).json({
+        status: 'success',
+        item,
+      });
+    },
+  };
+}
+
+const teams = createResourceController(Team, teamSchema, {
+  sort: { name: 1 },
+  normalize: (data) => ({
+    ...data,
+    shortName: data.shortName.toUpperCase(),
+    recentForm: data.recentForm || [],
+  }),
+});
+
+const players = createResourceController(Player, playerSchema, {
+  sort: { handle: 1 },
+  populate: ['team'],
+  normalize: (data) => ({
+    ...data,
+    team: data.team || null,
+  }),
+});
+
+const tournaments = createResourceController(Tournament, tournamentSchema, {
+  sort: { startDate: -1 },
+});
+
+const maps = createResourceController(ValorantMap, mapSchema, {
+  sort: { name: 1 },
+});
+
+const agents = createResourceController(Agent, agentSchema, {
+  sort: { name: 1 },
+});
+
+const matches = createResourceController(Match, matchSchema, {
+  sort: { startsAt: 1 },
+  populate: ['tournament', 'teamA', 'teamB', 'winner'],
+});
+
+module.exports = {
+  teams,
+  players,
+  tournaments,
+  maps,
+  agents,
+  matches,
+};
+
