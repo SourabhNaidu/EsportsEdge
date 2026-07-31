@@ -1,141 +1,290 @@
 # EsportsEdge
 
-Valorant-first esports prediction and analytics platform.
+Valorant-first esports prediction and analytics platform built with the MERN stack, RabbitMQ background processing, and real-time leaderboard updates.
 
-## Current Scope
+EsportsEdge lets users browse upcoming Valorant matches, lock predictions, view rule-based match insights, and compete on a leaderboard. Admins can manage esports data, complete match results, and trigger background scoring through RabbitMQ.
 
-- React + Vite frontend
-- Express backend
-- MongoDB connection helper
-- Health-check API
-- Frontend to backend health-check call
-- Socket.IO server bootstrap for later real-time updates
-- User registration API
-- User login API
-- JWT auth middleware
-- Protected profile API
-- Register/login/profile UI flow
-- Admin-only APIs for teams, players, tournaments, matches, maps, and agents
-- Admin panel UI for creating and listing core esports data
-- Public match browsing API with search and status filters
-- Match board UI with selectable match details
-- Prediction API with one prediction per user per match
-- Prediction UI for winner, scoreline, top fragger, and first map winner
-- Admin match result entry
-- Automatic prediction scoring after a result is submitted
-- RabbitMQ `match.completed` event queue for background prediction scoring
-- Leaderboard API and UI
-- Rule-based match analytics API and UI
-- Socket.IO live notifications for completed matches and leaderboard updates
+## Project Highlights
 
-## Run Locally
+- Built a full-stack prediction platform with React, Express, MongoDB, RabbitMQ, and Socket.IO.
+- Exposes 24 REST API endpoints across auth, admin data, matches, predictions, analytics, and leaderboard flows.
+- Supports 6 admin-managed esports entities: teams, players, tournaments, matches, maps, and agents.
+- Enforces 1 prediction per user per match and locks predictions after match start.
+- Scores predictions across 4 categories: winner, scoreline, first map winner, and top fragger.
+- Uses a durable RabbitMQ `match.completed` queue for background scoring.
+- Ships with 50+ realistic Valorant seed records, including 8 teams, 12 players, 6 matches, 12 agents, and 9 maps.
+- Includes 12 backend tests covering health, auth, admin protection, predictions, scoring, and analytics.
 
-1. Install dependencies:
+## Tech Stack
+
+| Layer | Tools |
+| --- | --- |
+| Frontend | React, Vite, Tailwind CSS, TanStack Query, Socket.IO Client |
+| Backend | Node.js, Express.js, MongoDB, Mongoose |
+| Auth and Validation | JWT, bcrypt, Zod |
+| Background Jobs | RabbitMQ, amqplib |
+| Real Time | Socket.IO |
+| Testing | Jest, Supertest |
+| Tooling | Docker, Docker Compose, Postman, npm |
+
+## Core Features
+
+### User Features
+
+- Register and login with JWT authentication.
+- Stay logged in using local token storage.
+- View profile stats: points, accuracy, and streak.
+- Browse database-backed Valorant matches.
+- Search and filter matches by team, tournament, and status.
+- Submit predictions for winner, scoreline, first map winner, and top fragger.
+- View leaderboard rankings and rule-based match insights.
+
+### Admin Features
+
+- Role-based admin access using an invite code.
+- Create and list teams, players, tournaments, matches, maps, and agents.
+- Complete match results from the admin panel.
+- Trigger prediction scoring through RabbitMQ.
+- Broadcast match and leaderboard updates through Socket.IO.
+
+### Analytics Features
+
+EsportsEdge uses rule-based analytics instead of machine learning. The current analytics engine calculates:
+
+- Momentum score from recent team form.
+- Map advantage signal from matchup context.
+- Upset alert based on form gaps.
+- Human-readable insight text for each match.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  User["User / Admin"] --> Client["React + Vite Frontend"]
+  Client --> API["Express REST API"]
+  API --> Mongo["MongoDB"]
+  API --> Socket["Socket.IO"]
+  API --> Queue["RabbitMQ match.completed Queue"]
+  Queue --> Worker["Scoring Worker"]
+  Worker --> Mongo
+  Worker --> Socket
+  Socket --> Client
+```
+
+## Match Completion Flow
+
+```mermaid
+sequenceDiagram
+  participant Admin
+  participant API as Express API
+  participant MQ as RabbitMQ
+  participant Worker as Scoring Worker
+  participant DB as MongoDB
+  participant UI as Socket.IO Clients
+
+  Admin->>API: Complete match result
+  API->>DB: Save winner, score, result details
+  API->>MQ: Publish match.completed event
+  API-->>Admin: Result queued for scoring
+  MQ->>Worker: Consume match.completed
+  Worker->>DB: Score predictions and update users
+  Worker->>UI: Emit match and leaderboard updates
+```
+
+If RabbitMQ is unavailable during local development, the backend falls back to inline scoring so the app remains usable.
+
+## Local Setup
+
+### 1. Clone and Install
 
 ```bash
+git clone https://github.com/SourabhNaidu/EsportsEdge.git
+cd EsportsEdge
 npm install
 npm --prefix client install
 ```
 
-2. Create `.env` from `.env.example`.
+### 2. Create Environment File
 
-3. Start MongoDB and RabbitMQ locally for register/login/admin data and background scoring to work.
+Create `.env` from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Example local values:
+
+```env
+PORT=5000
+NODE_ENV=development
+CLIENT_URL=http://localhost:5173
+MONGODB_URI=mongodb://127.0.0.1:27017/esportsedge
+RABBITMQ_URL=amqp://127.0.0.1:5672
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_EXPIRES_IN=7d
+ADMIN_INVITE_CODE=admin123
+```
+
+### 3. Start MongoDB and RabbitMQ
 
 ```bash
 docker compose up -d mongo rabbitmq
 ```
 
-4. Set an `ADMIN_INVITE_CODE` in `.env` if you want to create an admin account.
+Services:
 
-5. Start both apps:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:5000`
+- Health check: `http://localhost:5000/api/health`
+- RabbitMQ dashboard: `http://localhost:15672`
 
-```bash
-npm run dev
+RabbitMQ local dashboard login is usually:
+
+```text
+guest / guest
 ```
 
-Frontend: `http://localhost:5173`
-
-Backend health check: `http://localhost:5000/api/health`
-
-RabbitMQ dashboard: `http://localhost:15672`
-
-To create an admin user locally, enter the same `ADMIN_INVITE_CODE` while registering.
-
-6. Add realistic Valorant seed data:
+### 4. Seed Realistic Demo Data
 
 ```bash
 npm run seed
 ```
 
-The seed adds real Valorant-style teams, notable player handles, tournaments,
-matches, agents, maps, and demo leaderboard users. Demo user password:
-`Valorant123!`.
+The seed command adds:
 
-## Auth Endpoints
+- 8 Valorant teams
+- 12 player handles
+- 3 tournaments
+- 6 upcoming matches
+- 12 agents
+- 9 maps
+- Demo leaderboard users
 
-- `POST /api/auth/register`: create a user account
-- `POST /api/auth/login`: log in and receive a JWT
-- `GET /api/auth/profile`: protected profile route, requires `Authorization: Bearer <token>`
+Demo user password:
 
-## Admin Endpoints
+```text
+Valorant123!
+```
+
+### 5. Run the App
+
+```bash
+npm run dev
+```
+
+This starts the backend and frontend together. The backend also starts the RabbitMQ match-completed worker by default.
+
+## Useful Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Run frontend and backend together |
+| `npm run server:dev` | Run backend only with nodemon |
+| `npm run server:start` | Run backend with Node |
+| `npm run worker:start` | Run the RabbitMQ scoring worker separately |
+| `npm run client:dev` | Run frontend only |
+| `npm run client:build` | Build frontend for production |
+| `npm run seed` | Seed MongoDB with realistic Valorant data |
+| `npm test` | Run backend tests |
+
+## API Overview
+
+### Auth
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | `/api/auth/register` | Create user or admin account |
+| POST | `/api/auth/login` | Login and receive JWT |
+| GET | `/api/auth/profile` | Get authenticated user profile |
+
+### Matches
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/matches` | List matches with `status` and `q` filters |
+| GET | `/api/matches/:id` | Get match details |
+
+### Predictions
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| POST | `/api/predictions` | Create prediction for a match |
+| GET | `/api/predictions/matches/:matchId/me` | Get current user's prediction |
+| GET | `/api/predictions/matches/:matchId/percentages` | Get crowd prediction percentages |
+
+### Analytics and Leaderboard
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/analytics/matches/:matchId` | Get momentum, map advantage, and upset alert |
+| GET | `/api/leaderboard` | Get ranked prediction leaderboard |
+
+### Admin
 
 All admin endpoints require an admin JWT.
 
-- `GET /api/admin/teams`
-- `POST /api/admin/teams`
-- `GET /api/admin/players`
-- `POST /api/admin/players`
-- `GET /api/admin/tournaments`
-- `POST /api/admin/tournaments`
-- `GET /api/admin/matches`
-- `POST /api/admin/matches`
-- `POST /api/admin/matches/:id/result`
-- `GET /api/admin/maps`
-- `POST /api/admin/maps`
-- `GET /api/admin/agents`
-- `POST /api/admin/agents`
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET / POST | `/api/admin/teams` | List or create teams |
+| GET / POST | `/api/admin/players` | List or create players |
+| GET / POST | `/api/admin/tournaments` | List or create tournaments |
+| GET / POST | `/api/admin/matches` | List or create matches |
+| POST | `/api/admin/matches/:id/result` | Complete match and publish scoring job |
+| GET / POST | `/api/admin/maps` | List or create maps |
+| GET / POST | `/api/admin/agents` | List or create agents |
 
-## Match Endpoints
+## Testing and Verification
 
-- `GET /api/matches`: list matches, supports `status` and `q` query params
-- `GET /api/matches/:id`: view match details
+Run backend tests:
 
-When MongoDB is offline, the match list returns demo fixtures so the frontend still works as a deployable preview.
+```bash
+npm test
+```
 
-## Prediction Endpoints
+Run frontend lint:
 
-- `POST /api/predictions`: create a match prediction, requires login
-- `GET /api/predictions/matches/:matchId/me`: view your prediction for a match
-- `GET /api/predictions/matches/:matchId/percentages`: view prediction crowd percentages
+```bash
+npm --prefix client run lint
+```
 
-## Analytics And Leaderboard
+Build frontend:
 
-- `GET /api/analytics/matches/:matchId`: rule-based momentum, map advantage, and upset alert
-- `GET /api/leaderboard`: ranked users by prediction points
+```bash
+npm run client:build
+```
 
-## Background Jobs
+Audit dependencies:
 
-When an admin completes a match, the backend publishes a durable
-`match.completed` event to RabbitMQ. The match-completed worker consumes that
-event, scores predictions, updates user stats, and emits Socket.IO leaderboard
-updates. If RabbitMQ is unavailable in local development, the backend falls back
-to inline scoring so the app still works.
+```bash
+npm audit --omit=dev
+npm --prefix client audit --omit=dev
+```
 
-## MVP Flow
+Check RabbitMQ queue:
 
-1. Register with `ADMIN_INVITE_CODE` to create an admin.
-2. Use Admin to create teams, a tournament, and a match.
-3. Register or login as a normal user.
-4. Pick a match winner, scoreline, top fragger, and first map winner.
-5. Login as admin and complete the match result.
-6. Predictions are scored and leaderboard updates.
+```bash
+docker exec esportsedge-rabbitmq rabbitmqctl list_queues name messages consumers
+```
 
-## Scripts
+Expected local queue state after startup:
 
-- `npm run dev`: run frontend and backend together
-- `npm run server:dev`: run backend only
-- `npm run client:dev`: run frontend only
-- `npm run worker:start`: run the RabbitMQ scoring worker only
-- `npm run client:build`: build frontend
-- `npm run seed`: add realistic Valorant demo data to MongoDB
-- `npm test`: run backend tests
+```text
+name             messages   consumers
+match.completed 0          1
+```
+
+## Resume-Safe Summary
+
+Built EsportsEdge, a Valorant-first MERN esports prediction platform with 24 REST API endpoints, JWT role-based admin workflows, RabbitMQ background scoring, Socket.IO real-time leaderboard updates, Dockerized MongoDB/RabbitMQ infrastructure, and rule-based momentum analytics.
+
+## Notes
+
+- Seeded match schedules are realistic demo data for portfolio use, not official VCT schedule data.
+- Public match browsing still has a demo fallback if MongoDB is offline.
+- RabbitMQ is used for completed-match scoring, with inline scoring fallback for local resilience.
