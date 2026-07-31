@@ -4,6 +4,7 @@ const Player = require('../models/Player');
 const Team = require('../models/Team');
 const Tournament = require('../models/Tournament');
 const ValorantMap = require('../models/ValorantMap');
+const { publishMatchCompleted } = require('../services/rabbitmq.service');
 const { scoreMatchPredictions } = require('../services/scoring.service');
 const {
   agentSchema,
@@ -140,19 +141,33 @@ async function completeMatch(req, res) {
   };
   await match.save();
 
-  const scoring = await scoreMatchPredictions(match);
+  let scoring = { scored: 0, queued: true };
+  let queued = false;
   const io = req.app.get('io');
 
-  if (io) {
-    io.emit('match:completed', { matchId: match._id.toString(), scoring });
-    io.emit('leaderboard:updated', { matchId: match._id.toString() });
+  try {
+    queued = await publishMatchCompleted({
+      matchId: match._id.toString(),
+      completedAt: new Date().toISOString(),
+    });
+    scoring = { scored: 0, queued: true };
+  } catch (error) {
+    console.warn(`RabbitMQ unavailable, scoring inline: ${error.message}`);
+    scoring = await scoreMatchPredictions(match);
+
+    if (io) {
+      io.emit('match:completed', { matchId: match._id.toString(), scoring });
+      io.emit('leaderboard:updated', { matchId: match._id.toString() });
+    }
   }
 
   await match.populate(['tournament', 'teamA', 'teamB', 'winner']);
 
   return res.json({
     status: 'success',
-    message: 'Match completed and predictions scored',
+    message: queued
+      ? 'Match completed and queued for RabbitMQ scoring'
+      : 'Match completed and predictions scored',
     scoring,
     item: match,
   });

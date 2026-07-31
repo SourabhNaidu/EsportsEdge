@@ -23,6 +23,7 @@ Valorant-first esports prediction and analytics platform.
 - Prediction UI for winner, scoreline, top fragger, and first map winner
 - Admin match result entry
 - Automatic prediction scoring after a result is submitted
+- RabbitMQ `match.completed` event queue for background prediction scoring
 - Leaderboard API and UI
 - Rule-based match analytics API and UI
 - Socket.IO live notifications for completed matches and leaderboard updates
@@ -38,10 +39,10 @@ npm --prefix client install
 
 2. Create `.env` from `.env.example`.
 
-3. Start MongoDB locally for register/login/admin data to work.
+3. Start MongoDB and RabbitMQ locally for register/login/admin data and background scoring to work.
 
 ```bash
-docker compose up -d mongo
+docker compose up -d mongo rabbitmq
 ```
 
 4. Set an `ADMIN_INVITE_CODE` in `.env` if you want to create an admin account.
@@ -55,6 +56,8 @@ npm run dev
 Frontend: `http://localhost:5173`
 
 Backend health check: `http://localhost:5000/api/health`
+
+RabbitMQ dashboard: `http://localhost:15672`
 
 To create an admin user locally, enter the same `ADMIN_INVITE_CODE` while registering.
 
@@ -110,6 +113,14 @@ When MongoDB is offline, the match list returns demo fixtures so the frontend st
 - `GET /api/analytics/matches/:matchId`: rule-based momentum, map advantage, and upset alert
 - `GET /api/leaderboard`: ranked users by prediction points
 
+## Background Jobs
+
+When an admin completes a match, the backend publishes a durable
+`match.completed` event to RabbitMQ. The match-completed worker consumes that
+event, scores predictions, updates user stats, and emits Socket.IO leaderboard
+updates. If RabbitMQ is unavailable in local development, the backend falls back
+to inline scoring so the app still works.
+
 ## MVP Flow
 
 1. Register with `ADMIN_INVITE_CODE` to create an admin.
@@ -124,6 +135,7 @@ When MongoDB is offline, the match list returns demo fixtures so the frontend st
 - `npm run dev`: run frontend and backend together
 - `npm run server:dev`: run backend only
 - `npm run client:dev`: run frontend only
+- `npm run worker:start`: run the RabbitMQ scoring worker only
 - `npm run client:build`: build frontend
 - `npm run seed`: add realistic Valorant demo data to MongoDB
 - `npm test`: run backend tests

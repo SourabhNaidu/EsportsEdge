@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const app = require('./app');
 const { connectDB } = require('./config/db');
+const { startMatchCompletedWorker } = require('./workers/matchCompleted.worker');
 
 const PORT = process.env.PORT || 5000;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -36,6 +37,12 @@ async function startServer() {
   server.listen(PORT, () => {
     console.log(`EsportsEdge API listening on http://localhost:${PORT}`);
   });
+
+  if (process.env.START_RABBIT_WORKER !== 'false') {
+    startMatchCompletedWorker({ io }).catch((error) => {
+      console.warn(`RabbitMQ worker disabled: ${error.message}`);
+    });
+  }
 }
 
 if (require.main === module) {
